@@ -1,101 +1,170 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect, useCallback } from "react";
+import { Select, SelectItem, Button } from "@nextui-org/react";
+import { servers } from "@/info/servers";
+import { sites } from "@/info/sites";
+import { google, facebook, youtube } from "@/traceroutes/local/tracer";
+import {
+  GoogleMap,
+  Marker,
+  Polyline,
+  useLoadScript,
+} from "@react-google-maps/api";
+import { TracerouteResult } from "@/interfaces/ipAPI";
+
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const defaultCenter = {
+  lat: 0,
+  lng: 0,
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [selectedServer, setSelectedServer] = useState("");
+  const [selectedSite, setSelectedSite] = useState("");
+  const [tracerouteData, setTracerouteData] = useState<TracerouteResult[]>([]);
+  const [mapCenter, setMapCenter] = useState(defaultCenter);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const handleSelectedServer = (serverId: string) => {
+    setSelectedServer(serverId);
+  };
+
+  const handleSelectedSite = (siteId: string) => {
+    setSelectedSite(siteId);
+  };
+
+  async function fetchTraceroutes(querys: Array<object>) {
+    const response = await fetch("http://ip-api.com/batch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(querys),
+    });
+    const data = await response.json();
+    console.log(data);
+    return data;
+  }
+
+  useEffect(() => {
+    if (selectedServer && selectedSite) {
+      let selectedTraceroute: string | any[] = [];
+
+      if (selectedServer === "1" && selectedSite === "1") {
+        selectedTraceroute = google;
+      } else if (selectedServer === "1" && selectedSite === "2") {
+        selectedTraceroute = facebook;
+      } else if (selectedServer === "1" && selectedSite === "3") {
+        selectedTraceroute = youtube;
+      }
+
+      // Si hay un traceroute seleccionado, lo procesamos
+      if (selectedTraceroute.length > 0) {
+        fetchTraceroutes(selectedTraceroute).then((data) => {
+          // Filtrar solo los objetos que tienen 'status: success' y lat/lon válidos
+          const successData = data.filter(
+            (item: TracerouteResult) =>
+              item.status === "success" && item.lat && item.lon
+          );
+
+          // Guardar los datos filtrados en el estado
+          setTracerouteData(successData);
+
+          // Centrar el mapa en el primer punto válido
+          if (successData.length > 0) {
+            setMapCenter({
+              lat: successData[0].lat!,
+              lng: successData[0].lon!,
+            });
+          }
+        });
+      }
+    }
+  }, [selectedServer, selectedSite]);
+
+  // Cargar el script de Google Maps
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "", // Reemplaza con tu API Key
+  });
+
+  if (loadError) return <div>Error al cargar el mapa</div>;
+  if (!isLoaded) return <div>Cargando mapa...</div>;
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4 text-white">¡Bienvenido!</h1>
+      <p className="mb-4 text-white/90">
+        A continuación, selecciona un servidor y un sitio web para ver el
+        trazado de rutas.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Select label="Selecciona un servidor" className="max-w-xs" size="sm">
+          {servers.map((server) => (
+            <SelectItem
+              key={server.key}
+              value={server.key}
+              onClick={() => handleSelectedServer(server.key)}
+            >
+              {server.label}
+            </SelectItem>
+          ))}
+        </Select>
+        <Select
+          label="Selecciona un sitio web"
+          className="max-w-xs disabled:cursor-not-allowed"
+          isDisabled={!selectedServer}
+          size="sm"
+        >
+          {sites.map((site) => (
+            <SelectItem
+              key={site.key}
+              value={site.key}
+              onClick={() => handleSelectedSite(site.key)}
+            >
+              {site.label}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
+      <Button
+        color="primary"
+        variant="shadow"
+        isDisabled={!selectedServer || !selectedSite}
+      >
+        Trazar
+      </Button>
+      <div className="h-[400px] w-full mt-6">
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          zoom={4}
+          center={mapCenter}
+        >
+          {tracerouteData.map((route, index) => (
+            <Marker
+              key={index}
+              position={{ lat: route.lat!, lng: route.lon! }}
+              title={route.city}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          ))}
+          {/* Opcional: Dibujar una polilínea que conecte los puntos */}
+          {tracerouteData.length > 1 && (
+            <Polyline
+              path={tracerouteData.map((route) => ({
+                lat: route.lat!,
+                lng: route.lon!,
+              }))}
+              options={{
+                strokeColor: "#0000FF",
+                strokeOpacity: 0.7,
+                strokeWeight: 3,
+              }}
+            />
+          )}
+        </GoogleMap>
+      </div>
     </div>
   );
 }
