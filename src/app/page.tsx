@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Select, SelectItem, Button } from "@nextui-org/react";
 import { servers } from "@/info/servers";
 import { sites } from "@/info/sites";
@@ -23,11 +23,14 @@ const defaultCenter = {
 };
 
 export default function Home() {
+  // Estados
   const [selectedServer, setSelectedServer] = useState("");
   const [selectedSite, setSelectedSite] = useState("");
   const [tracerouteData, setTracerouteData] = useState<TracerouteResult[]>([]);
   const [mapCenter, setMapCenter] = useState(defaultCenter);
+  const [traceroute, setTraceroute] = useState(false);
 
+  // Manejadores de eventos
   const handleSelectedServer = (serverId: string) => {
     setSelectedServer(serverId);
   };
@@ -36,6 +39,7 @@ export default function Home() {
     setSelectedSite(siteId);
   };
 
+  // Función para realizar las peticiones POST a la API de IP-API y obtener la longitud y latitud de las direcciones IP
   async function fetchTraceroutes(querys: Array<object>) {
     const response = await fetch("http://ip-api.com/batch", {
       method: "POST",
@@ -45,14 +49,15 @@ export default function Home() {
       body: JSON.stringify(querys),
     });
     const data = await response.json();
-    console.log(data);
     return data;
   }
 
   useEffect(() => {
     if (selectedServer && selectedSite) {
+      // Variable para almacenar el traceroute seleccionado
       let selectedTraceroute: string | any[] = [];
 
+      // Asignar el traceroute seleccionado
       if (selectedServer === "1" && selectedSite === "1") {
         selectedTraceroute = google;
       } else if (selectedServer === "1" && selectedSite === "2") {
@@ -82,26 +87,55 @@ export default function Home() {
           }
         });
       }
+      setTraceroute(false);
     }
-  }, [selectedServer, selectedSite]);
+  }, [traceroute]);
 
   // Cargar el script de Google Maps
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "", // Reemplaza con tu API Key
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
 
   if (loadError) return <div>Error al cargar el mapa</div>;
   if (!isLoaded) return <div>Cargando mapa...</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4 text-white">¡Bienvenido!</h1>
-      <p className="mb-4 text-white/90">
-        A continuación, selecciona un servidor y un sitio web para ver el
-        trazado de rutas.
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Select label="Selecciona un servidor" className="max-w-xs" size="sm">
+    <div className="container mx-auto md:p-10 p-5">
+      <div className="rounded-lg">
+        <div className="flex flex-col space-y-3 p-6">
+          <h3 className="whitespace-nowrap text-2xl font-semibold leading-none tracking-tight text-white">
+            ¡Bienvenido a Traza Rutas!
+          </h3>
+          <p className="text-sm text-muted-foreground text-white md:text-start text-justify">
+            Bienvenido a nuestra aplicación web que te permite visualizar la
+            ruta que toma tu conexión desde un servidor hasta diversos sitios
+            web. Esta herramienta está diseñada para ayudarte a entender mejor
+            el tráfico de la red y analizar los puntos de conexión globales.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-lg">
+        <div className="flex flex-col space-y-3 p-6">
+          <h3 className="whitespace-nowrap text-2xl font-semibold leading-none tracking-tight text-white">
+            ¿Cómo funciona?
+          </h3>
+          <ol className="list-decimal list-inside text-white">
+            <li>
+              Selecciona un servidor desde el cual quieras iniciar la traza.
+            </li>
+            <li>Escoge un sitio web de destino.</li>
+            <li>Visualiza los resultados en un mapa interactivo.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div className="flex md:flex-row flex-col gap-4 mb-6 p-6 md:items-center">
+        <Select
+          label="Selecciona un servidor"
+          className="md:max-w-xs"
+          size="sm"
+        >
           {servers.map((server) => (
             <SelectItem
               key={server.key}
@@ -114,8 +148,7 @@ export default function Home() {
         </Select>
         <Select
           label="Selecciona un sitio web"
-          className="max-w-xs disabled:cursor-not-allowed"
-          isDisabled={!selectedServer}
+          className="md:max-w-xs"
           size="sm"
         >
           {sites.map((site) => (
@@ -128,15 +161,18 @@ export default function Home() {
             </SelectItem>
           ))}
         </Select>
+        <Button
+          color="primary"
+          variant="shadow"
+          isDisabled={!selectedServer || !selectedSite}
+          className="disabled:cursor-not-allowed"
+          onClick={() => setTraceroute(true)}
+        >
+          Trazar
+        </Button>
       </div>
-      <Button
-        color="primary"
-        variant="shadow"
-        isDisabled={!selectedServer || !selectedSite}
-      >
-        Trazar
-      </Button>
-      <div className="h-[400px] w-full mt-6">
+
+      <div className="h-[600px] w-full p-6">
         <GoogleMap
           mapContainerStyle={mapContainerStyle}
           zoom={4}
@@ -149,7 +185,6 @@ export default function Home() {
               title={route.city}
             />
           ))}
-          {/* Opcional: Dibujar una polilínea que conecte los puntos */}
           {tracerouteData.length > 1 && (
             <Polyline
               path={tracerouteData.map((route) => ({
