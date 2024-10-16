@@ -3,7 +3,46 @@ import { useState, useEffect } from "react";
 import { Select, SelectItem, Button } from "@nextui-org/react";
 import { servers } from "@/info/servers";
 import { sites } from "@/info/sites";
-import { google, facebook, youtube } from "@/traceroutes/local/tracer";
+import {
+  googleLocal,
+  facebookLocal,
+  youtubeLocal,
+} from "@/traceroutes/local/Colombia";
+import {
+  googleUSA,
+  facebookUSA,
+  youtubeUSA,
+} from "@/traceroutes/northAmerica/USA";
+import {
+  googleBrasil,
+  facebookBrasil,
+  youtubeBrasil,
+} from "@/traceroutes/southAmerica/Brasil";
+import {
+  googlePanama,
+  facebookPanama,
+  youtubePanama,
+} from "@/traceroutes/centralAmerica/Panama";
+import {
+  googleFrancia,
+  facebookFrancia,
+  youtubeFrancia,
+} from "@/traceroutes/europe/Francia";
+import {
+  googleHongKong,
+  facebookHongKong,
+  youtubeHongKong,
+} from "@/traceroutes/asia/HongKong";
+import {
+  googleSouthAfrica,
+  facebookSouthAfrica,
+  youtubeSouthAfrica,
+} from "@/traceroutes/africa/SouthAfrica";
+import {
+  googleAustralia,
+  facebookAustralia,
+  youtubeAustralia,
+} from "@/traceroutes/oceania/Australia";
 import {
   GoogleMap,
   Marker,
@@ -28,7 +67,7 @@ export default function Home() {
   const [selectedSite, setSelectedSite] = useState("");
   const [tracerouteData, setTracerouteData] = useState<TracerouteResult[]>([]);
   const [mapCenter, setMapCenter] = useState(defaultCenter);
-  const [traceroute, setTraceroute] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // Estado para forzar la re-renderización del mapa
 
   // Manejadores de eventos
   const handleSelectedServer = (serverId: string) => {
@@ -52,44 +91,112 @@ export default function Home() {
     return data;
   }
 
-  useEffect(() => {
+  // Función para manejar el clic en el botón "Trazar"
+  const handleTraceroute = async () => {
     if (selectedServer && selectedSite) {
-      // Variable para almacenar el traceroute seleccionado
+      // Limpiar datos anteriores
+      setTracerouteData([]); // Limpiar datos previos de la traza
+      setMapCenter(defaultCenter); // Restablecer el centro del mapa si es necesario
+      setMapKey((prev) => prev + 1); // Forzar la re-renderización del mapa
+
+      // Determinar el traceroute seleccionado
       let selectedTraceroute: string | any[] = [];
 
-      // Asignar el traceroute seleccionado
+      // Local
       if (selectedServer === "1" && selectedSite === "1") {
-        selectedTraceroute = google;
+        selectedTraceroute = googleLocal;
       } else if (selectedServer === "1" && selectedSite === "2") {
-        selectedTraceroute = facebook;
+        selectedTraceroute = facebookLocal;
       } else if (selectedServer === "1" && selectedSite === "3") {
-        selectedTraceroute = youtube;
+        selectedTraceroute = youtubeLocal;
       }
 
-      // Si hay un traceroute seleccionado, lo procesamos
+      // USA
+      if (selectedServer === "2" && selectedSite === "1") {
+        selectedTraceroute = googleUSA;
+      } else if (selectedServer === "2" && selectedSite === "2") {
+        selectedTraceroute = facebookUSA;
+      } else if (selectedServer === "2" && selectedSite === "3") {
+        selectedTraceroute = youtubeUSA;
+      }
+
+      // Brasil
+      if (selectedServer === "3" && selectedSite === "1") {
+        selectedTraceroute = googleBrasil;
+      } else if (selectedServer === "3" && selectedSite === "2") {
+        selectedTraceroute = facebookBrasil;
+      } else if (selectedServer === "3" && selectedSite === "3") {
+        selectedTraceroute = youtubeBrasil;
+      }
+
+      // Panama
+      if (selectedServer === "4" && selectedSite === "1") {
+        selectedTraceroute = googlePanama;
+      } else if (selectedServer === "4" && selectedSite === "2") {
+        selectedTraceroute = facebookPanama;
+      } else if (selectedServer === "4" && selectedSite === "3") {
+        selectedTraceroute = youtubePanama;
+      }
+
+      // Francia
+      if (selectedServer === "5" && selectedSite === "1") {
+        selectedTraceroute = googleFrancia;
+      } else if (selectedServer === "5" && selectedSite === "2") {
+        selectedTraceroute = facebookFrancia;
+      } else if (selectedServer === "5" && selectedSite === "3") {
+        selectedTraceroute = youtubeFrancia;
+      }
+
+      // HongKong
+      if (selectedServer === "6" && selectedSite === "1") {
+        selectedTraceroute = googleHongKong;
+      } else if (selectedServer === "6" && selectedSite === "2") {
+        selectedTraceroute = facebookHongKong;
+      } else if (selectedServer === "6" && selectedSite === "3") {
+        selectedTraceroute = youtubeHongKong;
+      }
+
+      // SudAfrica
+      if (selectedServer === "7" && selectedSite === "1") {
+        selectedTraceroute = googleSouthAfrica;
+      } else if (selectedServer === "7" && selectedSite === "2") {
+        selectedTraceroute = facebookSouthAfrica;
+      } else if (selectedServer === "7" && selectedSite === "3") {
+        selectedTraceroute = youtubeSouthAfrica;
+      }
+
+      // Australia
+      if (selectedServer === "8" && selectedSite === "1") {
+        selectedTraceroute = googleAustralia;
+      } else if (selectedServer === "8" && selectedSite === "2") {
+        selectedTraceroute = facebookAustralia;
+      } else if (selectedServer === "8" && selectedSite === "3") {
+        selectedTraceroute = youtubeAustralia;
+      }
+
+      // Realizar el traceroute si hay datos seleccionados
       if (selectedTraceroute.length > 0) {
-        fetchTraceroutes(selectedTraceroute).then((data) => {
-          // Filtrar solo los objetos que tienen 'status: success' y lat/lon válidos
-          const successData = data.filter(
-            (item: TracerouteResult) =>
-              item.status === "success" && item.lat && item.lon
-          );
+        const data = await fetchTraceroutes(selectedTraceroute);
 
-          // Guardar los datos filtrados en el estado
-          setTracerouteData(successData);
+        // Filtrar solo los objetos que tienen 'status: success' y lat/lon válidos
+        const successData = data.filter(
+          (item: TracerouteResult) =>
+            item.status === "success" && item.lat && item.lon
+        );
 
-          // Centrar el mapa en el primer punto válido
-          if (successData.length > 0) {
-            setMapCenter({
-              lat: successData[0].lat!,
-              lng: successData[0].lon!,
-            });
-          }
-        });
+        // Actualizar el estado con los nuevos datos
+        setTracerouteData(successData);
+
+        // Centrar el mapa en el primer punto válido
+        if (successData.length > 0) {
+          setMapCenter({
+            lat: successData[0].lat!,
+            lng: successData[0].lon!,
+          });
+        }
       }
-      setTraceroute(false);
     }
-  }, [traceroute]);
+  };
 
   // Cargar el script de Google Maps
   const { isLoaded, loadError } = useLoadScript({
@@ -138,11 +245,11 @@ export default function Home() {
         >
           {servers.map((server) => (
             <SelectItem
-              key={server.key}
-              value={server.key}
-              onClick={() => handleSelectedServer(server.key)}
+              key={server?.key!}
+              value={server?.key}
+              onClick={() => server && handleSelectedServer(server.key)}
             >
-              {server.label}
+              {server?.label}
             </SelectItem>
           ))}
         </Select>
@@ -166,7 +273,7 @@ export default function Home() {
           variant="shadow"
           isDisabled={!selectedServer || !selectedSite}
           className="disabled:cursor-not-allowed"
-          onClick={() => setTraceroute(true)}
+          onClick={handleTraceroute}
         >
           Trazar
         </Button>
@@ -174,6 +281,7 @@ export default function Home() {
 
       <div className="h-[600px] w-full p-6">
         <GoogleMap
+          key={mapKey} // Usar el key para forzar el re-render
           mapContainerStyle={mapContainerStyle}
           zoom={4}
           center={mapCenter}

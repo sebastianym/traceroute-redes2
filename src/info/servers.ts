@@ -5,30 +5,31 @@ export const servers = [
   },
   {
     key: "2",
-    label: "Norte América",
+    label: "mdren.net (NA)",
   },
   {
     key: "3",
-    label: "Centro América",
+    label: "Registro.br (SA)",
   },
+  ,
   {
     key: "4",
-    label: "Sur América",
+    label: "ifxnetworks.com (CA)",
   },
   {
     key: "5",
-    label: "Europa",
+    label: "m247.com (EU)",
   },
   {
     key: "6",
-    label: "Asia",
+    label: "hgc-intl.com (AS)",
   },
   {
     key: "7",
-    label: "África",
+    label: "tenet.ac.za (AF)",
   },
   {
     key: "8",
-    label: "Oceanía",
+    label: "telstra.com.au (OC)",
   },
 ];
