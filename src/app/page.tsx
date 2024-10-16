@@ -80,13 +80,20 @@ export default function Home() {
 
   // Función para realizar las peticiones POST a la API de IP-API y obtener la longitud y latitud de las direcciones IP
   async function fetchTraceroutes(querys: Array<object>) {
-    const response = await fetch("http://ip-api.com/batch", {
+    const response = await fetch("/api/fetchTraceroutes", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(querys),
+      body: JSON.stringify({ querys }),
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error al realizar la solicitud de traceroute:", errorData);
+      throw new Error("Error al realizar la solicitud de traceroute");
+    }
+
     const data = await response.json();
     return data;
   }
@@ -176,23 +183,27 @@ export default function Home() {
 
       // Realizar el traceroute si hay datos seleccionados
       if (selectedTraceroute.length > 0) {
-        const data = await fetchTraceroutes(selectedTraceroute);
+        try {
+          const data = await fetchTraceroutes(selectedTraceroute);
 
-        // Filtrar solo los objetos que tienen 'status: success' y lat/lon válidos
-        const successData = data.filter(
-          (item: TracerouteResult) =>
-            item.status === "success" && item.lat && item.lon
-        );
+          // Filtrar solo los objetos que tienen 'status: success' y lat/lon válidos
+          const successData = data.filter(
+            (item: TracerouteResult) =>
+              item.status === "success" && item.lat && item.lon
+          );
 
-        // Actualizar el estado con los nuevos datos
-        setTracerouteData(successData);
+          // Actualizar el estado con los nuevos datos
+          setTracerouteData(successData);
 
-        // Centrar el mapa en el primer punto válido
-        if (successData.length > 0) {
-          setMapCenter({
-            lat: successData[0].lat!,
-            lng: successData[0].lon!,
-          });
+          // Centrar el mapa en el primer punto válido
+          if (successData.length > 0) {
+            setMapCenter({
+              lat: successData[0].lat!,
+              lng: successData[0].lon!,
+            });
+          }
+        } catch (error) {
+          console.error("Error al obtener traceroute:", error);
         }
       }
     }
