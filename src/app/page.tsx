@@ -209,6 +209,51 @@ export default function Home() {
     }
   };
 
+  // Función para exportar los datos a un archivo TXT
+  const exportToTxt = () => {
+    if (tracerouteData.length === 0) {
+      return;
+    }
+
+    // Formatear los datos como texto
+    const header =
+      "IP Inicial: " +
+      tracerouteData[0]?.query +
+      "\n" +
+      "IP Final: " +
+      tracerouteData[tracerouteData.length - 1]?.query +
+      "\n" +
+      "Número de Saltos: " +
+      tracerouteData.length +
+      "\n\n" +
+      "Saltos:\n";
+
+    const content = tracerouteData
+      .map((route, index) => `${index + 1}. ${route.query}`)
+      .join("\n");
+
+    const txtContent = header + content;
+
+    // Crear un Blob con el contenido
+    const blob = new Blob([txtContent], { type: "text/plain" });
+
+    // Crear una URL para el Blob
+    const url = URL.createObjectURL(blob);
+
+    // Crear un elemento <a> para descargar el archivo
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "traceroute_resultados.txt";
+
+    // Añadir el enlace al DOM y hacer clic en él
+    document.body.appendChild(link);
+    link.click();
+
+    // Limpiar
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Cargar el script de Google Maps
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -345,6 +390,15 @@ export default function Home() {
               </ul>
             ))}
           </div>
+          <Button
+            color="primary"
+            variant="shadow"
+            isDisabled={!selectedServer || !selectedSite}
+            className="mt-2 w-min"
+            onClick={exportToTxt}
+          >
+            Exportar a TXT
+          </Button>
         </div>
       </div>
     </div>
