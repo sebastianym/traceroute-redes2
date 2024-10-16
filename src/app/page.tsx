@@ -319,6 +319,34 @@ export default function Home() {
           )}
         </GoogleMap>
       </div>
+
+      <div className="rounded-lg text-white">
+        <div className="flex flex-col space-y-3 p-6">
+          <h3 className="whitespace-nowrap text-2xl font-semibold leading-none tracking-tight text-white">
+            Resultados Traza
+          </h3>
+          <div className="ml-2">
+            <p>
+              <span className="font-semibold">IP inicial:</span>{" "}
+              {tracerouteData[0]?.query}
+            </p>
+            <p>
+              <span className="font-semibold">IP final:</span>{" "}
+              {tracerouteData[tracerouteData.length - 1]?.query}
+            </p>
+            <p>
+              <span className="font-semibold">Número de saltos:</span>{" "}
+              {tracerouteData.length}
+            </p>
+            <p className="font-semibold">Saltos:</p>
+            {tracerouteData.map((route, index) => (
+              <ul key={index}>
+                <li>{route?.query}</li>
+              </ul>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
