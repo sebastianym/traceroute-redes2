@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Select, SelectItem, Button } from "@nextui-org/react";
 import { servers } from "@/info/servers";
 import { sites } from "@/info/sites";
